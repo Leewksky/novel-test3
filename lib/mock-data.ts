@@ -1,6 +1,6 @@
 import { Book, Chapter } from '@/types';
 
-// 扩展 Book 接口，增加更多字段
+// 扩展 Book 接口
 export interface BookExtended extends Book {
   tags: string[];
   views: string;
@@ -9,7 +9,7 @@ export interface BookExtended extends Book {
   score: number;
 }
 
-// 模拟生成数据的函数
+// 模拟生成书籍数据的辅助函数
 const generateBooks = (count: number, category: string, status: '连载中' | '已完结'): BookExtended[] => {
   return Array.from({ length: count }).map((_, i) => ({
     id: `${category}-${i}`,
@@ -24,7 +24,7 @@ const generateBooks = (count: number, category: string, status: '连载中' | '�
     views: `${Math.floor(Math.random() * 500) + 10}万`,
     wordCount: `${Math.floor(Math.random() * 200) + 20}万字`,
     latestChapter: `第${Math.floor(Math.random() * 1000) + 500}章 大结局`,
-    score: Number((Math.random() * 5 + 4).toFixed(1)) // 随机评分
+    score: Number((Math.random() * 5 + 4).toFixed(1))
   }));
 };
 
@@ -36,30 +36,35 @@ export const MOCK_BOOKS: BookExtended[] = [
   ...generateBooks(4, '言情', '连载中'),
 ];
 
-export const MOCK_CHAPTER: Chapter = {
-  id: '101',
-  bookId: '1',
-  title: '第一章 重生归来',
-  content: `
-    <p>痛，太痛了。</p>
-    <p>林风猛地睁开眼睛，发现自己竟然躺在高中时代的课桌上。</p>
-    <p>“我没死？我竟然回到了2025年？”</p>
-    <p>看着讲台上正在唾沫横飞的数学老师，林风的眼中闪过一丝精芒。</p>
-    <br/>
-    <p>上一世，他被仇家追杀，含恨陨落。</p>
-    <p>这一世，他发誓要夺回属于自己的一切！</p>
-    <p>（此处为演示内容，正文通常有几千字...）</p>
-  `,
-  prevId: null,
-  nextId: '102',
-};
-
 // 获取单本书
-export const getBook = async (id: string) => MOCK_BOOKS[0]; // 无论点哪本，都返回第一本（模拟）
+export const getBook = async (id: string) => MOCK_BOOKS[0]; // 模拟：无论点哪本都返回第一本的数据
 
-// 获取章节
-export const getChapter = async (bid: string, cid: string) => ({ 
-    ...MOCK_CHAPTER, 
-    id: cid, 
-    title: `第${cid}章 模拟章节剧情` 
-});
+// 🆕 核心修复：获取章节 (动态计算 ID)
+export const getChapter = async (bid: string, cid: string): Promise<Chapter> => {
+  // 1. 把字符串 ID 转换成数字 (例如 "101" -> 101)
+  const currentId = parseInt(cid, 10);
+  
+  // 2. 模拟正文内容
+  const content = `
+    <p>这是第 <strong>${currentId}</strong> 章的模拟内容。</p>
+    <p>在这个章节中，主角林风又遇到了新的挑战。他看着远方的天空，心中暗暗发誓，一定要夺回属于自己的一切。</p>
+    <br/>
+    <p>“你来了？”一个神秘的声音在身后响起。</p>
+    <p>林风猛地回头，发现竟然是多年前失踪的...</p>
+    <p>（此处省略三千字精彩剧情）</p>
+    <p>欲知后事如何，请点击下一章。</p>
+  `;
+
+  return {
+    id: cid,
+    bookId: bid,
+    title: `第${currentId}章 剧情不断升级`,
+    content: content,
+    
+    // 3. 动态计算上一章 (如果当前是第1章/101章，就没有上一章)
+    prevId: currentId > 1 ? String(currentId - 1) : null,
+    
+    // 4. 动态计算下一章 (永远 +1，实现无限翻页)
+    nextId: String(currentId + 1), 
+  };
+};
