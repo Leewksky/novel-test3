@@ -1,3 +1,21 @@
+<div className="mb-6">
+   <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
+      <Sparkles className="text-yellow-500" size={18}/> 猜你喜欢
+      <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 rounded">基于您的阅读偏好</span>
+   </h2>
+   <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+      {/* 随机取3本书模拟算法推荐 */}
+      {MOCK_BOOKS.slice(4, 7).map(book => (
+         <div key={book.id} className="bg-white p-3 rounded border flex gap-3">
+            <img src={book.coverUrl} className="w-16 h-20 object-cover rounded" />
+            <div className="flex flex-col justify-center">
+               <h4 className="font-bold text-sm line-clamp-1">{book.title}</h4>
+               <p className="text-xs text-gray-500 mt-1">98% 匹配度</p>
+            </div>
+         </div>
+      ))}
+   </div>
+</div>
 import Link from 'next/link';
 import { MOCK_BOOKS, RANK_BOOKS } from '@/lib/mock-data';
 import Navbar from '@/components/Navbar';
