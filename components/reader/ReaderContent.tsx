@@ -72,3 +72,13 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
     </div>
   );
 }
+<div className="flex items-center justify-between">
+  <span className="text-sm">字体</span>
+  <div className="flex gap-2">
+     {['系统', '宋体', '楷体'].map(font => (
+       <button key={font} className="px-3 py-1 border border-gray-600 rounded text-xs hover:border-white transition">
+         {font}
+       </button>
+     ))}
+  </div>
+</div>
