@@ -12,7 +12,7 @@ export default function AddToShelfBtn({ book }: { book: BookExtended }) {
   const handleClick = () => {
     if (!isAdded) {
       addToShelf(book);
-      setAnimate(true); // 触发一点动画反馈
+      setAnimate(true);
       setTimeout(() => setAnimate(false), 1000);
     }
   };
