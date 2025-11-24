@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useReaderStore } from '@/store/useReaderStore';
 import { Chapter } from '@/types';
-import { ArrowLeft, Menu, Settings, Type } from 'lucide-react';
+import { ArrowLeft, Menu, Type } from 'lucide-react';
 import Link from 'next/link';
 import { cn } from '@/lib/utils';
 
@@ -15,14 +15,29 @@ const themeStyles = {
   green: 'bg-[#e3edcd] text-[#333333]',
 };
 
+// 字体映射表 (关键修改：定义跨平台的字体栈)
+const fontOptions = [
+  { 
+    label: '系统', 
+    value: 'ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif' 
+  },
+  { 
+    label: '宋体', 
+    value: '"Songti SC", "STSong", "SimSun", "Hany Wenhei", serif' // 优先适配 Mac 宋体，然后是 Windows 宋体
+  },
+  { 
+    label: '楷体', 
+    value: '"KaiTi", "STKaiti", "BiauKai", serif' // 优先适配 Windows 楷体，然后是 Mac 楷体
+  },
+];
+
 export default function ReaderContent({ chapter }: { chapter: Chapter }) {
-  // 从 Store 获取设置
-  const { theme, fontSize, setTheme, setFontSize } = useReaderStore();
+  // 从 Store 获取设置 (包括新增的 fontFamily)
+  const { theme, fontSize, fontFamily, setTheme, setFontSize, setFontFamily } = useReaderStore();
   
   const [showMenu, setShowMenu] = useState(false);
   const [mounted, setMounted] = useState(false);
 
-  // 避免服务端渲染和客户端状态不一致导致的 Hydration Error
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -32,7 +47,7 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
   return (
     <div className={cn("min-h-screen transition-colors duration-300", themeStyles[theme])}>
       
-      {/* 顶部控制栏 (点击屏幕中间出现) */}
+      {/* 顶部控制栏 */}
       <div className={cn(
         "fixed top-0 left-0 right-0 h-14 bg-black/90 text-white flex items-center justify-between px-4 transition-transform duration-300 z-50",
         showMenu ? "translate-y-0" : "-translate-y-full"
@@ -42,18 +57,22 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
         <button className="hover:text-gray-300"><Menu /></button>
       </div>
 
-      {/* 正文点击区域 (点击切换菜单显示状态) */}
+      {/* 正文点击区域 (应用字体设置) */}
       <div 
         onClick={() => setShowMenu(!showMenu)}
         className="max-w-3xl mx-auto px-4 py-16 min-h-screen cursor-pointer"
-        style={{ fontSize: `${fontSize}px`, lineHeight: 1.8 }}
+        style={{ 
+          fontSize: `${fontSize}px`, 
+          lineHeight: 1.8,
+          fontFamily: fontFamily // 👈 这里是字体生效的关键
+        }}
       >
         <h1 className="text-2xl font-bold mb-8 mt-4">{chapter.title}</h1>
         {/* 渲染 HTML 内容 */}
         <div dangerouslySetInnerHTML={{ __html: chapter.content }} />
       </div>
 
-      {/* 底部设置栏 (点击屏幕中间出现) */}
+      {/* 底部设置栏 */}
       <div className={cn(
         "fixed bottom-0 left-0 right-0 bg-black/90 text-white px-6 py-6 transition-transform duration-300 z-50 space-y-6 rounded-t-xl",
         showMenu ? "translate-y-0" : "translate-y-full"
@@ -69,13 +88,23 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
           </div>
         </div>
 
-        {/* 2. 字体选择 (UI演示，实际功能需扩展Store) */}
+        {/* 2. 字体选择 (功能已修复) */}
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400">字体</span>
           <div className="flex gap-2">
-             {['系统', '宋体', '楷体'].map(font => (
-               <button key={font} className="px-3 py-1 border border-gray-600 rounded text-xs hover:border-white hover:bg-white/10 transition">
-                 {font}
+             {fontOptions.map(option => (
+               <button 
+                 key={option.label} 
+                 onClick={() => setFontFamily(option.value)}
+                 className={cn(
+                   "px-3 py-1 border rounded text-xs transition",
+                   // 如果当前字体值包含选中的 label 对应的核心关键词，就高亮
+                   fontFamily === option.value 
+                     ? "bg-white text-black border-white" 
+                     : "border-gray-600 hover:border-white hover:bg-white/10"
+                 )}
+               >
+                 {option.label}
                </button>
              ))}
           </div>
