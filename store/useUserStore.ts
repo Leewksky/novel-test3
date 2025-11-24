@@ -5,8 +5,8 @@ import { BookExtended } from '@/lib/mock-data';
 interface UserState {
   isLoggedIn: boolean;
   userInfo: { name: string; avatar: string } | null;
-  shelf: BookExtended[]; // 书架（收藏）
-  history: BookExtended[]; // 阅读历史
+  shelf: BookExtended[];
+  history: BookExtended[];
   login: () => void;
   logout: () => void;
   addToShelf: (book: BookExtended) => void;
@@ -41,11 +41,10 @@ export const useUserStore = create<UserState>()(
       },
 
       addToHistory: (book) => {
-        // 历史记录只保留最近20条，且去重
         const newHistory = [book, ...get().history.filter(b => b.id !== book.id)].slice(0, 20);
         set({ history: newHistory });
       }
     }),
-    { name: 'user-storage' } // 数据持久化到 LocalStorage
+    { name: 'user-storage' }
   )
 );
