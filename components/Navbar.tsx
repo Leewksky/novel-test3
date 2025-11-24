@@ -1,4 +1,4 @@
-'use client'; // 变成客户端组件以响应状态
+'use client';
 import Link from 'next/link';
 import { Search, User, Menu, Book } from 'lucide-react';
 import { useUserStore } from '@/store/useUserStore';
@@ -19,8 +19,13 @@ export default function Navbar() {
               CZBOOKS<span className="text-black font-normal text-sm ml-1">Lite</span>
             </Link>
 
+            <nav className="hidden md:flex gap-6 text-sm font-medium text-gray-700 mx-6">
+              <Link href="#" className="hover:text-[#d32f2f]">全本排行</Link>
+              <Link href="#" className="hover:text-[#d32f2f]">连载排行</Link>
+              <Link href="#" className="hover:text-[#d32f2f]">玄幻奇幻</Link>
+            </nav>
+
             <div className="flex items-center gap-4">
-              {/* 仅登录显示书架入口 */}
               {isLoggedIn && (
                 <Link href="/shelf" className="hidden md:flex items-center gap-1 text-gray-600 hover:text-[#d32f2f]">
                    <Book size={18} /> 书架
@@ -29,8 +34,7 @@ export default function Navbar() {
 
               {isLoggedIn ? (
                 <div className="flex items-center gap-3 cursor-pointer group relative">
-                   <img src={userInfo?.avatar} className="w-8 h-8 rounded-full border border-gray-200" />
-                   {/* 简单的下拉菜单 */}
+                   <img src={userInfo?.avatar} className="w-8 h-8 rounded-full border border-gray-200" alt="avatar" />
                    <div className="absolute top-full right-0 mt-2 w-32 bg-white shadow-lg rounded-lg border py-2 hidden group-hover:block">
                       <button onClick={() => logout()} className="w-full text-left px-4 py-2 text-sm hover:bg-gray-50 text-red-600">退出登录</button>
                    </div>
@@ -47,7 +51,6 @@ export default function Navbar() {
           </div>
         </div>
       </header>
-
       {showLogin && <AuthModal onClose={() => setShowLogin(false)} />}
     </>
   );
