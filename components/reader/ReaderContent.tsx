@@ -9,7 +9,6 @@ import { useRouter } from 'next/navigation';
 import { useSwipeable } from 'react-swipeable';
 import { cn } from '@/lib/utils';
 
-// 主题样式映射
 const themeStyles = {
   light: 'bg-white text-gray-900',
   sepia: 'bg-[#f4ecd8] text-[#5b4636]',
@@ -23,24 +22,22 @@ const fontOptions = [
   { label: '楷体', value: '"KaiTi", "STKaiti", "BiauKai", serif' },
 ];
 
-export default function ReaderContent({ chapter }: { chapter: Chapter }) {
+// 🆕 定义简化的目录类型
+interface TocItem {
+  id: string;
+  title: string;
+}
+
+// 🆕 组件接收两个 props: chapter (当前章内容), toc (整本书目录)
+export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc: TocItem[] }) {
   const router = useRouter();
   const { theme, fontSize, fontFamily, setTheme, setFontSize, setFontFamily } = useReaderStore();
   
-  // 控制上下菜单栏
   const [showMenu, setShowMenu] = useState(false);
-  // 🆕 控制右侧目录栏
   const [showSidebar, setShowSidebar] = useState(false);
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => { setMounted(true); }, []);
-
-  // 模拟生成 50 个章节用于目录展示
-  // 在真实项目中，这里应该从 API 获取目录数据
-  const mockChapters = Array.from({ length: 50 }, (_, i) => ({
-    id: String(i + 1),
-    title: `第${i + 1}章 模拟的精彩剧情`,
-  }));
 
   const handlePrev = () => {
     if (chapter.prevId) router.push(`/n/${chapter.bookId}/${chapter.prevId}`);
@@ -75,54 +72,41 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
       {...swipeHandlers} 
       className={cn("min-h-screen transition-colors duration-300 outline-none overflow-hidden", themeStyles[theme])}
     >
-      
-      {/* ================= 顶部控制栏 ================= */}
+      {/* 顶部控制栏 */}
       <div className={cn(
         "fixed top-0 left-0 right-0 h-14 bg-black/90 text-white flex items-center justify-between px-4 transition-transform duration-300 z-50",
         showMenu ? "translate-y-0" : "-translate-y-full"
       )}>
         <Link href={`/n/${chapter.bookId}`} className="hover:text-gray-300"><ArrowLeft /></Link>
         <span className="text-sm truncate w-1/2 text-center font-medium">{chapter.title}</span>
-        
-        {/* 🆕 点击这里打开侧边目录 */}
-        <button onClick={() => setShowSidebar(true)} className="hover:text-gray-300 p-2">
-            <Menu />
-        </button>
+        <button onClick={() => setShowSidebar(true)} className="hover:text-gray-300 p-2"><Menu /></button>
       </div>
 
-      {/* ================= 🆕 右侧目录侧边栏 (Sidebar) ================= */}
-      {/* 遮罩层 */}
+      {/* 右侧目录侧边栏 (现在使用真实数据 toc 渲染) */}
       {showSidebar && (
-        <div 
-          className="fixed inset-0 bg-black/60 z-[60] transition-opacity"
-          onClick={() => setShowSidebar(false)}
-        />
+        <div className="fixed inset-0 bg-black/60 z-[60] transition-opacity" onClick={() => setShowSidebar(false)} />
       )}
       
-      {/* 目录列表容器 */}
       <div className={cn(
         "fixed top-0 right-0 h-full w-4/5 max-w-sm bg-white text-gray-900 z-[70] transition-transform duration-300 shadow-2xl flex flex-col",
         showSidebar ? "translate-x-0" : "translate-x-full"
       )}>
-        {/* 侧边栏头部 */}
         <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="font-bold text-lg flex items-center gap-2"><List size={18}/> 目录</h3>
-            <button onClick={() => setShowSidebar(false)} className="text-gray-500 hover:text-black">
-                <X size={24} />
-            </button>
+            <h3 className="font-bold text-lg flex items-center gap-2"><List size={18}/> 目录 ({toc.length})</h3>
+            <button onClick={() => setShowSidebar(false)} className="text-gray-500 hover:text-black"><X size={24} /></button>
         </div>
         
-        {/* 章节滚动列表 */}
         <div className="flex-1 overflow-y-auto p-2">
-            {mockChapters.map((item) => {
+            {/* 🆕 这里遍历的是真实的 toc 数据 */}
+            {toc.map((item) => {
                 const isCurrent = item.id === chapter.id;
                 return (
                     <div 
                         key={item.id}
                         onClick={() => {
                             router.push(`/n/${chapter.bookId}/${item.id}`);
-                            setShowSidebar(false); // 跳转后关闭侧边栏
-                            setShowMenu(false);    // 同时关闭上下菜单
+                            setShowSidebar(false); 
+                            setShowMenu(false);    
                         }}
                         className={cn(
                             "p-3 border-b border-dashed cursor-pointer text-sm truncate rounded transition-colors",
@@ -139,7 +123,7 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
         </div>
       </div>
 
-      {/* ================= 正文区域 ================= */}
+      {/* 正文区域 */}
       <div 
         onClick={() => setShowMenu(!showMenu)}
         className="max-w-3xl mx-auto px-4 py-16 min-h-screen cursor-pointer select-none overflow-y-auto"
@@ -166,12 +150,13 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
         </div>
       </div>
 
-      {/* ================= 底部设置栏 ================= */}
+      {/* 底部设置栏 */}
       <div className={cn(
         "fixed bottom-0 left-0 right-0 bg-black/90 text-white px-6 py-6 transition-transform duration-300 z-50 space-y-6 rounded-t-xl",
         showMenu ? "translate-y-0" : "translate-y-full"
       )}>
-        <div className="flex items-center justify-between">
+         {/* (设置部分的 UI 保持不变，省略以节省篇幅，请保留你原有的字号、字体、主题代码) */}
+         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400 flex items-center gap-2"><Type size={16}/> 字号</span>
           <div className="flex items-center gap-6">
              <button onClick={() => setFontSize(Math.max(12, fontSize - 2))} className="border border-gray-600 w-10 h-8 rounded hover:bg-gray-700">-</button>
@@ -179,7 +164,6 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
              <button onClick={() => setFontSize(Math.min(32, fontSize + 2))} className="border border-gray-600 w-10 h-8 rounded hover:bg-gray-700">+</button>
           </div>
         </div>
-
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400">字体</span>
           <div className="flex gap-2">
@@ -197,7 +181,6 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
              ))}
           </div>
         </div>
-
         <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400">主题</span>
           <div className="flex gap-3">
@@ -214,7 +197,6 @@ export default function ReaderContent({ chapter }: { chapter: Chapter }) {
             ))}
           </div>
         </div>
-        
         <div className="flex justify-between pt-4 border-t border-gray-800 gap-4">
           <button 
             onClick={handlePrev} 
