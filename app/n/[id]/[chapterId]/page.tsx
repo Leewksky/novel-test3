@@ -1,5 +1,5 @@
 import { notFound } from 'next/navigation';
-import ReaderContent from '@/components/reader/ReaderContent'; // 这是之前写的 UI 组件
+import ReaderContent from '@/components/reader/ReaderContent';
 import { supabase } from '@/lib/supabase';
 
 // 强制动态渲染
@@ -12,7 +12,7 @@ export default async function ReaderPage({
 }) {
   const { id: bookId, chapterId } = params;
 
-  // 1. 获取当前章节的内容
+  // 1. 获取当前章节
   const { data: currentChapter, error } = await supabase
     .from('chapters')
     .select('*')
@@ -23,27 +23,35 @@ export default async function ReaderPage({
     return notFound();
   }
 
-  // 2. 获取上一章 ID (查询同书，章节号比当前小，按从大到小排，取第1个)
+  // 2. 获取上一章 ID
   const { data: prevData } = await supabase
     .from('chapters')
     .select('id')
     .eq('book_id', bookId)
-    .lt('chapter_number', currentChapter.chapter_number) // lt = less than
+    .lt('chapter_number', currentChapter.chapter_number)
     .order('chapter_number', { ascending: false })
     .limit(1)
     .single();
 
-  // 3. 获取下一章 ID (查询同书，章节号比当前大，按从小到大排，取第1个)
+  // 3. 获取下一章 ID
   const { data: nextData } = await supabase
     .from('chapters')
     .select('id')
     .eq('book_id', bookId)
-    .gt('chapter_number', currentChapter.chapter_number) // gt = greater than
+    .gt('chapter_number', currentChapter.chapter_number)
     .order('chapter_number', { ascending: true })
     .limit(1)
     .single();
 
-  // 4. 组装数据传给 UI 组件
+  // 4. 🆕 获取整本书的目录列表 (为了侧边栏菜单)
+  // 只取 id 和 title，按 chapter_number 排序
+  const { data: allChapters } = await supabase
+    .from('chapters')
+    .select('id, title')
+    .eq('book_id', bookId)
+    .order('chapter_number', { ascending: true });
+
+  // 5. 组装数据
   const chapterData = {
     id: currentChapter.id,
     bookId: bookId,
@@ -53,5 +61,6 @@ export default async function ReaderPage({
     nextId: nextData ? nextData.id : null,
   };
 
-  return <ReaderContent chapter={chapterData} />;
+  // 传入 toc 数据
+  return <ReaderContent chapter={chapterData} toc={allChapters || []} />;
 }
