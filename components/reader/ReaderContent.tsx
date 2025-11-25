@@ -22,14 +22,13 @@ const fontOptions = [
   { label: '楷体', value: '"KaiTi", "STKaiti", "BiauKai", serif' },
 ];
 
-// 🆕 定义简化的目录类型
 interface TocItem {
   id: string;
   title: string;
 }
 
-// 🆕 组件接收两个 props: chapter (当前章内容), toc (整本书目录)
-export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc: TocItem[] }) {
+// 🛡️ 修改点1：给 toc 一个默认值 []，防止 undefined 报错
+export default function ReaderContent({ chapter, toc = [] }: { chapter: Chapter; toc?: TocItem[] }) {
   const router = useRouter();
   const { theme, fontSize, fontFamily, setTheme, setFontSize, setFontFamily } = useReaderStore();
   
@@ -40,12 +39,12 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
   useEffect(() => { setMounted(true); }, []);
 
   const handlePrev = () => {
-    if (chapter.prevId) router.push(`/n/${chapter.bookId}/${chapter.prevId}`);
+    if (chapter?.prevId) router.push(`/n/${chapter.bookId}/${chapter.prevId}`);
     else alert('已经是第一章了');
   };
 
   const handleNext = () => {
-    if (chapter.nextId) router.push(`/n/${chapter.bookId}/${chapter.nextId}`);
+    if (chapter?.nextId) router.push(`/n/${chapter.bookId}/${chapter.nextId}`);
     else alert('已经是最后一章了');
   };
 
@@ -66,6 +65,9 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
   });
 
   if (!mounted) return <div className="min-h-screen bg-white"></div>;
+  
+  // 🛡️ 修改点2：如果数据严重缺失，显示错误提示而不是崩掉
+  if (!chapter) return <div className="p-10 text-center">章节加载错误，请刷新重试</div>;
 
   return (
     <div 
@@ -82,7 +84,7 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
         <button onClick={() => setShowSidebar(true)} className="hover:text-gray-300 p-2"><Menu /></button>
       </div>
 
-      {/* 右侧目录侧边栏 (现在使用真实数据 toc 渲染) */}
+      {/* 右侧目录侧边栏 */}
       {showSidebar && (
         <div className="fixed inset-0 bg-black/60 z-[60] transition-opacity" onClick={() => setShowSidebar(false)} />
       )}
@@ -92,13 +94,14 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
         showSidebar ? "translate-x-0" : "translate-x-full"
       )}>
         <div className="flex items-center justify-between p-4 border-b">
-            <h3 className="font-bold text-lg flex items-center gap-2"><List size={18}/> 目录 ({toc.length})</h3>
+            {/* 🛡️ 修改点3：显示目录数量时增加安全检查 */}
+            <h3 className="font-bold text-lg flex items-center gap-2"><List size={18}/> 目录 ({toc?.length || 0})</h3>
             <button onClick={() => setShowSidebar(false)} className="text-gray-500 hover:text-black"><X size={24} /></button>
         </div>
         
         <div className="flex-1 overflow-y-auto p-2">
-            {/* 🆕 这里遍历的是真实的 toc 数据 */}
-            {toc.map((item) => {
+            {/* 🛡️ 修改点4：使用可选链 ?. 确保 toc 存在才遍历 */}
+            {toc?.length > 0 ? toc.map((item) => {
                 const isCurrent = item.id === chapter.id;
                 return (
                     <div 
@@ -119,7 +122,9 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
                         {isCurrent && <span className="float-right text-xs bg-[#d32f2f] text-white px-1.5 rounded">当前</span>}
                     </div>
                 );
-            })}
+            }) : (
+              <div className="p-4 text-gray-400 text-center text-sm">暂无目录数据</div>
+            )}
         </div>
       </div>
 
@@ -155,7 +160,7 @@ export default function ReaderContent({ chapter, toc }: { chapter: Chapter; toc:
         "fixed bottom-0 left-0 right-0 bg-black/90 text-white px-6 py-6 transition-transform duration-300 z-50 space-y-6 rounded-t-xl",
         showMenu ? "translate-y-0" : "translate-y-full"
       )}>
-         {/* (设置部分的 UI 保持不变，省略以节省篇幅，请保留你原有的字号、字体、主题代码) */}
+        {/* 设置内容保持不变... */}
          <div className="flex items-center justify-between">
           <span className="text-sm text-gray-400 flex items-center gap-2"><Type size={16}/> 字号</span>
           <div className="flex items-center gap-6">
