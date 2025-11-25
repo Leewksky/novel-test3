@@ -1,24 +1,26 @@
 import Link from 'next/link';
-import { MOCK_BOOKS, RANK_BOOKS, BookExtended } from '@/lib/mock-data';
 import Navbar from '@/components/Navbar';
 import { Flame, TrendingUp, Sparkles } from 'lucide-react';
+import { supabase } from '@/lib/supabase'; // 🆕 引入刚才写的工具
 
-const RankItem = ({ book, index }: { book: BookExtended, index: number }) => (
-  <Link href={`/n/${book.id}`} className="flex items-center gap-3 py-3 border-b border-gray-100 last:border-0 hover:bg-gray-50 transition px-2">
-    <div className={`w-6 h-6 flex items-center justify-center rounded text-xs font-bold ${index < 3 ? 'bg-[#d32f2f] text-white' : 'bg-gray-200 text-gray-500'}`}>
-      {index + 1}
-    </div>
-    <div className="flex-1 min-w-0">
-      <h4 className="text-sm text-gray-800 truncate hover:text-[#d32f2f]">{book.title}</h4>
-      <p className="text-xs text-gray-400 truncate">{book.views}人气</p>
-    </div>
-  </Link>
-);
+// 定义数据库返回的数据类型 (根据我们在 Supabase 建的表)
+interface BookDB {
+  id: string;
+  title: string;
+  author: string;
+  cover_url: string; // 数据库里是下划线命名
+  category: string;
+  status: string;
+  description: string;
+  views: string;
+  score: number;
+}
 
-const BookCard = ({ book }: { book: BookExtended }) => (
+// 单个书籍组件
+const BookCard = ({ book }: { book: BookDB }) => (
   <div className="flex gap-4 p-4 border rounded-lg bg-white hover:shadow-md transition group">
     <Link href={`/n/${book.id}`} className="flex-shrink-0 w-24 h-32 relative overflow-hidden rounded">
-      <img src={book.coverUrl} className="w-full h-full object-cover group-hover:scale-105 transition" alt={book.title} />
+      <img src={book.cover_url} className="w-full h-full object-cover group-hover:scale-105 transition" alt={book.title} />
       <span className="absolute top-0 right-0 bg-[#d32f2f] text-white text-[10px] px-1">{book.status}</span>
     </Link>
     <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -34,37 +36,37 @@ const BookCard = ({ book }: { book: BookExtended }) => (
         <p className="text-xs text-gray-500 line-clamp-2 leading-relaxed">{book.description}</p>
       </div>
       <div className="flex items-center justify-between text-xs text-gray-400 mt-2">
-         <span>{book.wordCount}</span>
+         <span>{book.views}人气</span>
          <span className="text-[#d32f2f] font-medium">{book.score}分</span>
       </div>
     </div>
   </div>
 );
 
-export default function Home() {
-  const mainBooks = MOCK_BOOKS.slice(0, 12);
+// 首页组件 (Server Component)
+export default async function Home() {
+  // 🆕 核心改变：直接从 Supabase 数据库请求数据
+  // .from('books') 对应你在 SQL 里建的表名
+  // .select('*') 意思是拿所有字段
+  const { data: books, error } = await supabase.from('books').select('*');
+
+  if (error) {
+    console.error('Error fetching books:', error);
+    return <div>加载失败，请检查数据库配置</div>;
+  }
+
+  // 此时 books 就是我们在 SQL 里插入的那 3 本书
+  // 为了页面好看，如果书太少，我们可以复制几遍撑场面 (实际不用)
+  const displayBooks = books && books.length > 0 ? books : [];
+
   return (
     <div className="min-h-screen bg-[#f4f5f7]">
       <Navbar />
       <main className="container mx-auto px-4 py-6">
         
-        {/* 猜你喜欢区 */}
-        <div className="mb-6">
-            <h2 className="text-lg font-bold mb-3 flex items-center gap-2">
-                <Sparkles className="text-yellow-500" size={18}/> 猜你喜欢
-                <span className="text-xs font-normal text-gray-400 bg-gray-100 px-2 rounded">基于您的阅读偏好</span>
-            </h2>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                {MOCK_BOOKS.slice(4, 7).map(book => (
-                    <Link key={book.id} href={`/n/${book.id}`} className="bg-white p-3 rounded border flex gap-3 hover:shadow-md transition">
-                        <img src={book.coverUrl} className="w-16 h-20 object-cover rounded" alt={book.title} />
-                        <div className="flex flex-col justify-center">
-                        <h4 className="font-bold text-sm line-clamp-1">{book.title}</h4>
-                        <p className="text-xs text-gray-500 mt-1">98% 匹配度</p>
-                        </div>
-                    </Link>
-                ))}
-            </div>
+        {/* 顶部提示：证明这是真实数据 */}
+        <div className="bg-green-100 text-green-800 p-3 rounded mb-4 text-sm text-center">
+          🎉 恭喜！以下数据来自 Supabase 真实数据库！
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -73,31 +75,20 @@ export default function Home() {
             <div className="bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
                 <div className="flex items-center gap-2 mb-4 pb-2 border-b border-gray-100">
                     <Flame className="text-[#d32f2f]" size={20} />
-                    <h2 className="text-lg font-bold">主编力荐</h2>
+                    <h2 className="text-lg font-bold">主编力荐 (数据库版)</h2>
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {mainBooks.map(book => <BookCard key={book.id} book={book} />)}
+                    {/* 渲染真实数据 */}
+                    {displayBooks.map((book: any) => <BookCard key={book.id} book={book} />)}
                 </div>
             </div>
           </div>
 
-          {/* 右侧侧边栏 */}
+          {/* 右侧暂时留空或放静态内容 */}
           <div className="lg:col-span-3 space-y-6">
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm overflow-hidden">
-                <div className="flex items-center gap-2 p-3 bg-gray-50 border-b border-gray-100">
-                    <TrendingUp className="text-[#d32f2f]" size={18} />
-                    <h2 className="font-bold text-gray-800">本周点击榜</h2>
-                </div>
-                <div>{RANK_BOOKS.map((book, i) => <RankItem key={book.id} book={book} index={i} />)}</div>
-            </div>
-            <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-                <h2 className="font-bold text-gray-800 mb-3 text-sm">热门标签</h2>
-                <div className="flex flex-wrap gap-2">
-                    {['系统', '穿越', '甜宠', '校花', '无敌', '末世'].map(tag => (
-                        <span key={tag} className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded hover:bg-[#d32f2f] hover:text-white cursor-pointer transition">{tag}</span>
-                    ))}
-                </div>
-            </div>
+             <div className="bg-white p-4 rounded text-sm text-gray-500">
+               排行榜暂时未连接数据库...
+             </div>
           </div>
         </div>
       </main>
